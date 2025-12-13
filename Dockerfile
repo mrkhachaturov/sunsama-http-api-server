@@ -54,6 +54,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget -q --spider http://localhost:${PORT:-3000}/health || exit 1
 
-# Start the server
-CMD ["node", "dist/esm/server/index.js"]
+# Start the server (using CJS to avoid ESM module type warnings)
+CMD ["node", "dist/cjs/server/index.js"]
 
