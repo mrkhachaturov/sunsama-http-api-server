@@ -1,528 +1,211 @@
-# Sunsama API TypeScript Wrapper
+# Sunsama HTTP API Server
 
 > **Disclaimer**: This is an unofficial wrapper for the Sunsama API. It is not affiliated with or endorsed by Sunsama.
 
-> **A Note from the Author**: I'm a huge fan and advocate of Sunsama. I've been using it daily for over a year and it's transformed how I plan my days. I created this package because I wanted to pull my tasks into other systems. I plan to maintain this package until either Sunsama releases an official API or I stop using the service. If you build something on top of `sunsama-api` feel free to share what you're building. 
+HTTP REST API server for [Sunsama](https://sunsama.com) daily planning, designed for integration with [n8n](https://n8n.io) and other automation tools.
 
-A comprehensive TypeScript wrapper for the Sunsama API, providing type-safe access to daily planning and task management functionality.
+## Credits
 
-[![npm version](https://badge.fury.io/js/sunsama-api.svg)](https://www.npmjs.com/package/sunsama-api)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
+This project is built on top of [sunsama-api](https://github.com/robertn702/sunsama-api) by [Robert Niimi (@robertn702)](https://github.com/robertn702). Huge thanks to him for creating the excellent TypeScript wrapper for the Sunsama API!
 
 ## Features
 
-- 🔒 **Type Safety**: Full TypeScript support with comprehensive type definitions
-- 🚀 **Modern**: Built with modern JavaScript/TypeScript practices
-- 📦 **Lightweight**: Minimal dependencies and optimized bundle size
-- 🔧 **Developer Friendly**: Intuitive API design with excellent IDE support
-- ✅ **Well Tested**: Comprehensive test coverage with Vitest
-- 📚 **Documented**: Complete API documentation and examples
-- 📅 **Task Scheduling**: Unified interface for scheduling, rescheduling, and managing task timing
-- 🆔 **ID Generation**: Built-in MongoDB ObjectId-style task ID generation
-- 🔍 **Input Validation**: Robust validation using Zod for enhanced type safety
-- 📦 **Archive Support**: Access to archived tasks with pagination support
-- 🤝 **Collaborative Editing**: Yjs-powered collaborative snapshot generation with XmlFragment support for proper real-time editing synchronization
-- 📝 **Task Notes Management**: Full CRUD operations for task notes with automatic HTML/Markdown conversion and proper Sunsama UI integration
-
-## Installation
-
-```bash
-npm install sunsama-api
-```
-
-```bash
-yarn add sunsama-api
-```
-
-```bash
-pnpm add sunsama-api
-```
+- **Multi-user support** - Single container handles multiple Sunsama accounts via API keys
+- **Docker-ready** - Includes Dockerfile and docker-compose.yml with secrets support
+- **n8n compatible** - REST API designed for easy integration with n8n workflows
+- **Secure** - Support for Docker secrets to protect credentials
+- **Full CRUD** - Complete task management: create, read, update, delete
+- **Type-safe** - Built with TypeScript
 
 ## Quick Start
 
-```typescript
-import { SunsamaClient } from 'sunsama-api';
+### Using Docker (Recommended)
 
-// Initialize the client
-const client = new SunsamaClient();
+1. **Create secrets directory:**
+   ```bash
+   mkdir -p secrets
+   echo "your-email@sunsama.com:your-password" > secrets/user1.txt
+   ```
 
-// Example usage
-async function example() {
-  try {
-    // Authenticate with email/password
-    await client.login('your-email@example.com', 'your-password');
-    
-    // Get current user information
-    const user = await client.getUser();
-    console.log('User:', user.profile.firstname, user.profile.lastname);
-    
-    // Get tasks for today
-    const today = new Date().toISOString().split('T')[0];
-    const tasks = await client.getTasksByDay(today);
-    console.log('Today\'s tasks:', tasks.length);
-    
-    // Get backlog tasks
-    const backlog = await client.getTasksBacklog();
-    console.log('Backlog tasks:', backlog.length);
-    
-    // Get archived tasks
-    const archived = await client.getArchivedTasks();
-    console.log('Archived tasks:', archived.length);
-    
-    // Get streams/projects
-    const streams = await client.getStreamsByGroupId();
-    console.log('Streams:', streams.length);
-    
-    // Get user's timezone
-    const timezone = await client.getUserTimezone();
-    console.log('Timezone:', timezone);
-    
-    // Update task notes with collaborative editing (HTML input)
-    await client.updateTaskNotes('task-id', {
-      html: '<p>Updated notes with <strong>formatting</strong></p>'
-    });
-    
-    // Or update with Markdown input
-    await client.updateTaskNotes('task-id', {
-      markdown: 'Updated notes with **formatting**'
-    });
-    
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
+2. **Start the server:**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Test the API:**
+   ```bash
+   curl -H "Authorization: Bearer sk_user1" http://localhost:3000/api/user
+   ```
+
+### Local Development
+
+1. **Install dependencies:**
+   ```bash
+   pnpm install
+   ```
+
+2. **Configure API keys:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Sunsama credentials
+   # Format: API_KEY_<your-key>=<email>:<password>
+   ```
+
+3. **Start the server:**
+   ```bash
+   pnpm dev:server
+   ```
+
+## API Endpoints
+
+All API endpoints require authentication via `Authorization: Bearer <api_key>` header.
+
+### Health Check (no auth)
+
+```http
+GET /health
 ```
 
-## Authentication
+### User
 
-The client uses email/password authentication or session tokens:
-
-```typescript
-// Method 1: Email/Password authentication
-const client = new SunsamaClient();
-await client.login('your-email@example.com', 'your-password');
-
-// Method 2: Session token (if you have one)
-const clientWithToken = new SunsamaClient({
-  sessionToken: 'your-session-token'
-});
-
-// Check authentication status
-const isAuth = await client.isAuthenticated();
-console.log('Authenticated:', isAuth);
-
-// Logout
-client.logout();
+```http
+GET /api/user              # Get current user info
+GET /api/user/timezone     # Get user timezone
 ```
 
-## API Methods
+### Streams
 
-The client provides the following methods organized by resource:
-
-### Users
-```typescript
-// Get current user details
-const user = await client.getUser();
-console.log(user.profile.firstname, user.profile.lastname);
-
-// Get user's timezone
-const timezone = await client.getUserTimezone();
+```http
+GET /api/streams           # Get all streams/projects
 ```
 
 ### Tasks
 
-#### Reading Tasks
-```typescript
-// Get tasks for a specific day
-const tasks = await client.getTasksByDay('2025-01-15');
-const tasksWithTz = await client.getTasksByDay('2025-01-15', 'America/New_York');
+```http
+GET /api/tasks/day/:date   # Get tasks for a specific day (YYYY-MM-DD)
+GET /api/tasks/backlog     # Get backlog tasks
+GET /api/tasks/archived    # Get archived tasks (?offset=0&limit=300)
+GET /api/tasks/:id         # Get task by ID
 
-// Get backlog tasks
-const backlog = await client.getTasksBacklog();
+POST /api/tasks            # Create a new task
+  Body: { text, notes?, timeEstimate?, streamIds? }
 
-// Get archived tasks with pagination
-const archivedTasks = await client.getArchivedTasks();
-const moreArchived = await client.getArchivedTasks(100, 50); // offset 100, limit 50
+PATCH /api/tasks/:id/complete      # Mark task complete
+PATCH /api/tasks/:id/snooze        # Schedule task / move to backlog
+PATCH /api/tasks/:id/notes         # Update task notes
+PATCH /api/tasks/:id/planned-time  # Update time estimate
+PATCH /api/tasks/:id/due-date      # Update due date
+PATCH /api/tasks/:id/text          # Update task text
+PATCH /api/tasks/:id/stream        # Update stream assignment
 
-// Get a specific task by ID
-const task = await client.getTaskById('685022edbdef77163d659d4a');
-if (task) {
-  console.log('Found task:', task.text);
-  console.log('Task completed:', task.completed);
-  console.log('Time estimate:', task.timeEstimate, 'minutes');
-} else {
-  console.log('Task not found');
-}
+DELETE /api/tasks/:id      # Delete task
 ```
 
-#### Creating Tasks
-```typescript
-// Create a basic task
-const newTask = await client.createTask('Complete project documentation');
+## n8n Integration
 
-// Create a task with options
-const taskWithOptions = await client.createTask('Review pull requests', {
-  notes: 'Check all open PRs in the main repository',
-  timeEstimate: 30,
-  streamIds: ['stream-id-1']
-});
+### HTTP Request Node Configuration
 
-// Create a task with due date and snooze
-const scheduledTask = await client.createTask('Follow up with client', {
-  dueDate: new Date('2025-01-20'),
-  snoozeUntil: new Date('2025-01-15T09:00:00')
-});
+1. **Method:** GET, POST, PATCH, or DELETE
+2. **URL:** `http://your-server:3000/api/tasks`
+3. **Authentication:** Header Auth
+4. **Header Name:** `Authorization`
+5. **Header Value:** `Bearer sk_your_api_key`
 
-// Create a task with custom ID (useful for tracking/deletion)
-const taskId = SunsamaClient.generateTaskId();
-const taskWithCustomId = await client.createTask('Custom task', {
-  taskId: taskId,
-  notes: 'Detailed description',
-  private: false,
-  streamIds: ['stream-1', 'stream-2'],
-  timeEstimate: 60
-});
+### Example: Get Today's Tasks
 
-// Create a task from a GitHub issue
-const githubTask = await client.createTask('Fix API documentation bug', {
-  integration: {
-    service: 'github',
-    identifier: {
-      id: 'I_kwDOO4SCuM7VTB4n',
-      repositoryOwnerLogin: 'robertn702',
-      repositoryName: 'sunsama-api',
-      number: 17,
-      type: 'Issue',
-      url: 'https://github.com/robertn702/sunsama-api/issues/17',
-      __typename: 'TaskGithubIntegrationIdentifier'
-    },
-    __typename: 'TaskGithubIntegration'
-  },
-  timeEstimate: 45
-});
-
-// Create a task from a Gmail email
-const gmailTask = await client.createTask('Project Update Email', {
-  integration: {
-    service: 'gmail',
-    identifier: {
-      id: '19a830b40fd7ab7d',
-      messageId: '19a830b40fd7ab7d',
-      accountId: 'user@example.com',
-      url: 'https://mail.google.com/mail/u/user@example.com/#inbox/19a830b40fd7ab7d',
-      __typename: 'TaskGmailIntegrationIdentifier'
-    },
-    __typename: 'TaskGmailIntegration'
-  },
-  timeEstimate: 15
-});
+```
+Method: GET
+URL: http://localhost:3000/api/tasks/day/{{ $now.format('yyyy-MM-dd') }}
+Headers:
+  Authorization: Bearer sk_user1
 ```
 
-#### Managing Tasks
-```typescript
-// Schedule a task to a specific date
-const scheduleResult = await client.updateTaskSnoozeDate('taskId', '2025-06-16');
+### Example: Create Task from n8n
 
-// Move a task to the backlog (unschedule)
-const backlogResult = await client.updateTaskSnoozeDate('taskId', null);
-
-// Reschedule a task from one date to another
-await client.updateTaskSnoozeDate('taskId', '2025-06-20');
-
-// Schedule with timezone consideration
-await client.updateTaskSnoozeDate('taskId', '2025-06-16', {
-  timezone: 'Europe/London'
-});
-
-// Get detailed response instead of limited payload
-await client.updateTaskSnoozeDate('taskId', '2025-06-16', {
-  limitResponsePayload: false
-});
-
-// Combine options
-await client.updateTaskSnoozeDate('taskId', '2025-06-16', {
-  timezone: 'Asia/Tokyo',
-  limitResponsePayload: false
-});
-
-// Mark a task as complete
-const completeResult = await client.updateTaskComplete('taskId');
-
-// Mark complete with specific timestamp
-const completeResultTimed = await client.updateTaskComplete('taskId', '2025-01-15T10:30:00Z');
-
-// Get full task details in response
-const completeResultFull = await client.updateTaskComplete('taskId', new Date(), false);
-
-// Delete a task
-const deleteResult = await client.deleteTask('taskId');
-
-// Delete with full response payload
-const deleteResultFull = await client.deleteTask('taskId', false);
-
-// Delete a merged task
-const deleteResultMerged = await client.deleteTask('taskId', true, true);
+```
+Method: POST
+URL: http://localhost:3000/api/tasks
+Headers:
+  Authorization: Bearer sk_user1
+  Content-Type: application/json
+Body:
+  {
+    "text": "Task created from n8n",
+    "timeEstimate": 30
+  }
 ```
 
-#### Updating Task Text/Title
+## Configuration
 
-You can update the text or title of a task using the `updateTaskText` method. This method allows you to change the main title/description of a task and optionally set a recommended stream ID.
+### Environment Variables
 
-```typescript
-// Update task text to a new title
-const result = await client.updateTaskText('taskId123', 'Updated task title');
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3000` |
+| `HOST` | Bind address | `0.0.0.0` |
+| `API_KEY_<key>` | Direct credentials: `email:password` | - |
+| `API_KEY_<key>_FILE` | Path to file containing `email:password` | - |
 
-// Update with recommended stream ID
-const result = await client.updateTaskText('taskId123', 'Task with stream', {
-  recommendedStreamId: 'stream-id-123'
-});
+### Docker Secrets (Production)
 
-// Get full response payload instead of limited response
-const result = await client.updateTaskText('taskId123', 'New title', {
-  limitResponsePayload: false
-});
+```yaml
+environment:
+  - API_KEY_sk_user1_FILE=/run/secrets/user1_creds
+secrets:
+  - user1_creds
 
-// Clear recommended stream ID
-const result = await client.updateTaskText('taskId123', 'Task without stream', {
-  recommendedStreamId: null
-});
-
-// Combine all options
-const result = await client.updateTaskText('taskId123', 'Full options task', {
-  recommendedStreamId: 'stream-456',
-  limitResponsePayload: false
-});
+secrets:
+  user1_creds:
+    file: ./secrets/user1.txt
 ```
 
-#### Updating Task Stream Assignment
+## Error Responses
 
-You can assign a task to a specific stream (project/category) using the `updateTaskStream` method. Streams represent projects, areas of focus, or organizational categories in Sunsama.
-
-```typescript
-// Assign task to a specific stream
-const result = await client.updateTaskStream('taskId123', 'streamId456');
-
-// Get full response payload instead of limited response
-const result = await client.updateTaskStream('taskId123', 'streamId456', false);
-
-// Example: Assign task to first available stream
-const streams = await client.getStreamsByGroupId();
-if (streams.length > 0) {
-  const result = await client.updateTaskStream('taskId123', streams[0]._id);
-  console.log('Task assigned to stream:', streams[0].streamName);
-}
-```
-
-#### Updating Task Planned Time
-
-You can update the time estimate (planned time) for a task using the `updateTaskPlannedTime` method. The time estimate represents how long you expect the task to take and is specified in minutes.
-
-```typescript
-// Set task time estimate to 30 minutes
-const result = await client.updateTaskPlannedTime('taskId', 30);
-
-// Set time estimate to 45 minutes with full response payload
-const result = await client.updateTaskPlannedTime('taskId', 45, false);
-
-// Clear time estimate (set to 0)
-const result = await client.updateTaskPlannedTime('taskId', 0);
-
-// Set time estimate to 1 hour (60 minutes)
-const result = await client.updateTaskPlannedTime('taskId', 60);
-```
-
-#### Updating Task Due Date
-
-You can update the due date for a task using the `updateTaskDueDate` method. The due date represents when the task should be completed and can be used for deadline tracking and planning. You can set the due date using a Date object, ISO string, or null to clear it.
-
-```typescript
-// Set task due date to a specific date
-const result = await client.updateTaskDueDate('taskId', new Date('2025-06-21'));
-
-// Set due date with ISO string
-const result = await client.updateTaskDueDate('taskId', '2025-06-21T04:00:00.000Z');
-
-// Clear the due date
-const result = await client.updateTaskDueDate('taskId', null);
-
-// Set due date with full response payload
-const result = await client.updateTaskDueDate('taskId', new Date('2025-06-21'), false);
-
-// Set due date to tomorrow
-const tomorrow = new Date();
-tomorrow.setDate(tomorrow.getDate() + 1);
-const result = await client.updateTaskDueDate('taskId', tomorrow);
-```
-
-#### Updating Task Notes
-
-The `updateTaskNotes` method uses Yjs-powered collaborative editing to maintain proper synchronization with Sunsama's real-time editor. It accepts content in either HTML or Markdown format and automatically converts to the other format. The task must already exist and have a collaborative editing state.
-
-```typescript
-// Update with HTML content (Markdown auto-generated)
-const htmlResult = await client.updateTaskNotes('taskId', {
-  html: '<p>Updated task notes with <strong>bold</strong> text</p>'
-});
-
-// Update with Markdown content (HTML auto-generated)
-const markdownResult = await client.updateTaskNotes('taskId', {
-  markdown: 'Updated task notes with **bold** text'
-});
-
-// Update with complex HTML content
-const complexResult = await client.updateTaskNotes('taskId', {
-  html: '<p>First paragraph</p><p>Second paragraph with <em>italic</em> text</p>'
-});
-
-// Update with complex Markdown content
-const complexMarkdownResult = await client.updateTaskNotes('taskId', {
-  markdown: 'First paragraph\n\nSecond paragraph with *italic* text'
-});
-
-// Get full response payload instead of limited response
-const fullResult = await client.updateTaskNotes('taskId', {
-  html: '<p>New notes content</p>'
-}, { limitResponsePayload: false });
-
-// Use a specific collaborative snapshot (advanced - useful for optimized workflows)
-const task = await client.getTaskById('taskId');
-if (task?.collabSnapshot) {
-  const customResult = await client.updateTaskNotes('taskId', {
-    markdown: 'Custom notes content'
-  }, { collabSnapshot: task.collabSnapshot });
-}
-```
-
-### Streams
-```typescript
-// Get all streams for the user's group
-const streams = await client.getStreamsByGroupId();
-streams.forEach(stream => {
-  console.log(stream.streamName, stream.color);
-});
-```
-
-### Utilities
-```typescript
-// Generate MongoDB ObjectId-style task IDs
-const taskId = SunsamaClient.generateTaskId();
-console.log(taskId); // "675a1b2c3d4e5f6789abcdef"
-
-// Use with createTask for controlled task creation
-const customTask = await client.createTask('My custom task', {
-  taskId: SunsamaClient.generateTaskId(),
-  notes: 'Task with custom ID for tracking',
-  timeEstimate: 45
-});
-```
-
-## Error Handling
-
-The wrapper provides structured error handling:
-
-```typescript
-import { SunsamaError, SunsamaAuthError, SunsamaApiError } from 'sunsama-api';
-
-try {
-  await client.login('email@example.com', 'password');
-  const user = await client.getUser();
-} catch (error) {
-  if (error instanceof SunsamaAuthError) {
-    console.error('Authentication Error:', error.message);
-  } else if (error instanceof SunsamaApiError) {
-    console.error('API Error:', error.message, error.status);
-  } else if (error instanceof SunsamaError) {
-    console.error('Client Error:', error.message);
-  } else {
-    console.error('Unknown Error:', error);
+```json
+{
+  "error": {
+    "message": "Error description",
+    "code": "ERROR_CODE",
+    "status": 400
   }
 }
 ```
 
-## Project Structure
-
-```
-sunsama-api/
-├── src/
-│   ├── client/          # Main SunsamaClient implementation
-│   ├── queries/         # GraphQL operations (domain-based)
-│   │   ├── tasks/       # Task queries and mutations
-│   │   ├── streams/     # Stream queries
-│   │   ├── user/        # User queries
-│   │   └── fragments/   # Shared GraphQL fragments
-│   ├── types/           # TypeScript type definitions
-│   ├── utils/           # Utility functions
-│   ├── errors/          # Custom error classes
-│   └── __tests__/       # Test suite
-├── scripts/             # Development and testing scripts
-├── dist/                # Build output (git ignored)
-│   ├── cjs/            # CommonJS build
-│   ├── esm/            # ES Modules build
-│   └── types/          # TypeScript declarations
-└── package.json
-```
+| Status | Description |
+|--------|-------------|
+| 400 | Validation error |
+| 401 | Authentication error |
+| 404 | Resource not found |
+| 500 | Internal server error |
+| 502 | Upstream API error |
+| 503 | Network error |
 
 ## Development
 
-This project uses modern development tools:
-
-- **TypeScript** for type safety
-- **Vitest** for testing
-- **ESLint + Prettier** for code quality
-- **pnpm** for package management
-- **Changesets** for version management
-
-### Setup
-
 ```bash
-# Clone the repository
-git clone https://github.com/robertn702/sunsama-api.git
-cd sunsama-api
-
 # Install dependencies
 pnpm install
 
-# Run tests
-pnpm test
+# Run in development mode
+pnpm dev:server
 
-# Build the package
+# Build for production
 pnpm build
 
-# Run linting
-pnpm lint
+# Run production server
+pnpm start
+
+# Run tests
+pnpm test
 ```
-
-### Scripts
-
-- `pnpm build` - Build the package for distribution (CJS, ESM, types)
-- `pnpm dev` - Start development mode with watch
-- `pnpm test` - Run the test suite with Vitest
-- `pnpm test:auth` - Test with real API credentials
-- `pnpm test:integration` - Run integration tests (requires credentials in .env)
-- `pnpm test:coverage` - Run tests with coverage report
-- `pnpm test:watch` - Run tests in watch mode
-- `pnpm lint` - Lint the codebase with ESLint
-- `pnpm format` - Format code with Prettier
-- `pnpm typecheck` - Type-check without building
-- `npx changeset` - Create changeset for version bump
-- `pnpm release` - Publish to npm registry
-
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
-## Support
+This project is built upon [sunsama-api](https://github.com/robertn702/sunsama-api) which is also MIT licensed.
 
-If you encounter any issues or have questions:
+## Acknowledgments
 
-1. Search [existing issues](https://github.com/robertn702/sunsama-api/issues)
-2. Create a [new issue](https://github.com/robertn702/sunsama-api/issues/new)
-
----
-
-Made with ❤️ for the Sunsama community
+- [Robert Niimi (@robertn702)](https://github.com/robertn702) - Creator of the original [sunsama-api](https://github.com/robertn702/sunsama-api) TypeScript wrapper
+- [Sunsama](https://sunsama.com) - The daily planner for busy professionals

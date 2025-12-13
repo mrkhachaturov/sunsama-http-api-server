@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+
+# Build output (will be regenerated)
+dist
+
+# Development files
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+
+# Test files
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Secrets (never include in image)
+secrets
+
+# Development files
+dev
+scripts
+
+# OS files
+.DS_Store
+Thumbs.db
+

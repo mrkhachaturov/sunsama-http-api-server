@@ -1,0 +1,64 @@
+/**
+ * Express application configuration
+ *
+ * Sets up middleware, routes, and error handling.
+ */
+
+import express, { type Express, type Request, type Response } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { loadConfig, logConfig, validateConfig, type ServerConfig } from './config/index.js';
+import { createAuthMiddleware } from './middleware/auth.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import apiRouter from './routes/index.js';
+
+/**
+ * Create and configure the Express application
+ */
+export function createApp(config: ServerConfig): Express {
+  const app = express();
+
+  // Security middleware
+  app.use(helmet());
+
+  // CORS - allow all origins for API access
+  app.use(cors());
+
+  // Parse JSON bodies
+  app.use(express.json());
+
+  // Health check endpoint (no auth required)
+  app.get('/health', (_req: Request, res: Response) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      version: process.env['npm_package_version'] || 'unknown',
+    });
+  });
+
+  // API routes (auth required)
+  app.use('/api', createAuthMiddleware(config), apiRouter);
+
+  // 404 handler
+  app.use(notFoundHandler);
+
+  // Error handler (must be last)
+  app.use(errorHandler);
+
+  return app;
+}
+
+/**
+ * Initialize and return the configured app
+ *
+ * Loads configuration from environment variables.
+ */
+export function initializeApp(): { app: Express; config: ServerConfig } {
+  const config = loadConfig();
+  validateConfig(config);
+  logConfig(config);
+
+  const app = createApp(config);
+
+  return { app, config };
+}

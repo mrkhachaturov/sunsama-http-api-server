@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  sunsama-api:
+    build: .
+    container_name: sunsama-api
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      # Option 1: Direct credentials (for development only)
+      # - API_KEY_sk_dev=your-email@example.com:your-password
+      
+      # Option 2: Docker secrets (recommended for production)
+      - API_KEY_sk_user1_FILE=/run/secrets/user1_creds
+      - API_KEY_sk_user2_FILE=/run/secrets/user2_creds
+    secrets:
+      - user1_creds
+      - user2_creds
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+secrets:
+  user1_creds:
+    file: ./secrets/user1.txt
+  user2_creds:
+    file: ./secrets/user2.txt
+
+# Usage:
+# 1. Create secrets directory: mkdir -p secrets
+# 2. Create credential files:
+#    echo "user1@example.com:password1" > secrets/user1.txt
+#    echo "user2@example.com:password2" > secrets/user2.txt
+# 3. Build and run: docker-compose up -d
+# 4. Test: curl -H "Authorization: Bearer sk_user1" http://localhost:3000/api/user
+

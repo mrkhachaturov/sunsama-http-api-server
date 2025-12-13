@@ -1,0 +1,53 @@
+# Sunsama API Server
+# Multi-stage build for optimized image size
+
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Enable corepack for pnpm
+RUN corepack enable
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build TypeScript
+RUN pnpm build
+
+# Production stage
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S sunsama -u 1001
+
+# Copy built files and dependencies
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+# Set ownership
+RUN chown -R sunsama:nodejs /app
+
+# Switch to non-root user
+USER sunsama
+
+# Expose port (configurable via PORT env var)
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://localhost:${PORT:-3000}/health || exit 1
+
+# Start the server
+CMD ["node", "dist/esm/server/index.js"]
+
