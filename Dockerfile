@@ -42,6 +42,12 @@ RUN chown -R sunsama:nodejs /app
 USER sunsama
 
 # Expose port (configurable via PORT env var)
+# Environment variables:
+#   PORT - Server port (default: 3000)
+#   HOST - Server host (default: 0.0.0.0)
+#   ENABLE_SWAGGER - Enable Swagger UI at /api-docs (default: false)
+#   API_KEY_<key> - API key credentials in format email:password
+#   API_KEY_<key>_FILE - Path to file containing credentials (for Docker secrets)
 EXPOSE 3000
 
 # Health check

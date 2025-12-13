@@ -87,6 +87,7 @@ function loadApiKeys(): Map<string, Credentials> {
 export function loadConfig(): ServerConfig {
   const port = parseInt(process.env['PORT'] || '3000', 10);
   const host = process.env['HOST'] || '0.0.0.0';
+  const enableSwagger = process.env['ENABLE_SWAGGER']?.toLowerCase() === 'true';
 
   if (isNaN(port) || port < 1 || port > 65535) {
     throw new ConfigError(`Invalid PORT value. Expected a number between 1 and 65535.`);
@@ -98,6 +99,7 @@ export function loadConfig(): ServerConfig {
     port,
     host,
     apiKeys,
+    enableSwagger,
   };
 }
 
@@ -119,6 +121,7 @@ export function logConfig(config: ServerConfig): void {
   console.log(`🔧 Server configuration:`);
   console.log(`   Host: ${config.host}`);
   console.log(`   Port: ${config.port}`);
+  console.log(`   Swagger UI: ${config.enableSwagger ? 'enabled at /api-docs' : 'disabled'}`);
   console.log(`   API keys: ${config.apiKeys.size} configured`);
 
   for (const [apiKey, creds] of config.apiKeys) {

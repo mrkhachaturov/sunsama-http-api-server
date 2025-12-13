@@ -7,10 +7,12 @@
 import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
 import { loadConfig, logConfig, validateConfig, type ServerConfig } from './config/index.js';
 import { createAuthMiddleware } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import apiRouter from './routes/index.js';
+import swaggerSpec from './swagger/index.js';
 
 /**
  * Create and configure the Express application
@@ -18,8 +20,20 @@ import apiRouter from './routes/index.js';
 export function createApp(config: ServerConfig): Express {
   const app = express();
 
-  // Security middleware
-  app.use(helmet());
+  // Security middleware - relax for Swagger UI (dev only), strict for production
+  if (config.enableSwagger) {
+    app.use(
+      helmet({
+        contentSecurityPolicy: false, // Disable CSP entirely for Swagger UI
+        hsts: false, // Disable HSTS - we're on HTTP for local dev
+        crossOriginOpenerPolicy: false,
+        crossOriginResourcePolicy: false,
+        originAgentCluster: false,
+      })
+    );
+  } else {
+    app.use(helmet());
+  }
 
   // CORS - allow all origins for API access
   app.use(cors());
@@ -35,6 +49,23 @@ export function createApp(config: ServerConfig): Express {
       version: process.env['npm_package_version'] || 'unknown',
     });
   });
+
+  // Swagger UI (conditionally enabled, no auth required)
+  if (config.enableSwagger) {
+    app.use(
+      '/api-docs',
+      swaggerUi.serve,
+      swaggerUi.setup(swaggerSpec, {
+        customSiteTitle: 'Sunsama API Documentation',
+        customCss: '.swagger-ui .topbar { display: none }',
+      })
+    );
+
+    // Serve raw OpenAPI spec as JSON
+    app.get('/api-docs.json', (_req: Request, res: Response) => {
+      res.json(swaggerSpec);
+    });
+  }
 
   // API routes (auth required)
   app.use('/api', createAuthMiddleware(config), apiRouter);

@@ -16,9 +16,28 @@ import type { AuthenticatedRequest } from '../middleware/auth.js';
 const router: RouterType = Router();
 
 /**
- * GET /api/streams
- *
- * Get all streams for the user's group
+ * @openapi
+ * /api/streams:
+ *   get:
+ *     summary: Get all streams
+ *     description: Retrieves all streams (projects/channels) for the user's group
+ *     tags: [Streams]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of streams
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Stream'
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {

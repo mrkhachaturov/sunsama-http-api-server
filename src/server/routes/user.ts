@@ -16,9 +16,26 @@ import type { AuthenticatedRequest } from '../middleware/auth.js';
 const router: RouterType = Router();
 
 /**
- * GET /api/user
- *
- * Get current user information
+ * @openapi
+ * /api/user:
+ *   get:
+ *     summary: Get current user
+ *     description: Retrieves information about the authenticated user
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -31,9 +48,30 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 /**
- * GET /api/user/timezone
- *
- * Get user's timezone
+ * @openapi
+ * /api/user/timezone:
+ *   get:
+ *     summary: Get user timezone
+ *     description: Retrieves the authenticated user's configured timezone
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User timezone
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     timezone:
+ *                       type: string
+ *                       example: "America/New_York"
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/timezone', async (req: Request, res: Response, next: NextFunction) => {
   try {
