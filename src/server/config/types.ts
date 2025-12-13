@@ -20,6 +20,8 @@ export interface ServerConfig {
   host: string;
   /** API key registry: maps API keys to credentials */
   apiKeys: Map<string, Credentials>;
+  /** Whether to enable Swagger UI at /api-docs */
+  enableSwagger: boolean;
 }
 
 /**

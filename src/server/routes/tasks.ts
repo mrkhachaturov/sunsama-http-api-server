@@ -16,12 +16,48 @@ import type { AuthenticatedRequest } from '../middleware/auth.js';
 const router: RouterType = Router();
 
 /**
- * GET /api/tasks/day/:date
- *
- * Get tasks for a specific day
- *
- * @param date - Date in YYYY-MM-DD format
- * @query timezone - Optional timezone (e.g., "America/New_York")
+ * @openapi
+ * /api/tasks/day/{date}:
+ *   get:
+ *     summary: Get tasks for a specific day
+ *     description: Retrieves all tasks scheduled for the specified date
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: date
+ *         in: path
+ *         required: true
+ *         description: Date in YYYY-MM-DD format
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "2024-01-15"
+ *       - name: timezone
+ *         in: query
+ *         required: false
+ *         description: Timezone for date interpretation
+ *         schema:
+ *           type: string
+ *           example: "America/New_York"
+ *     responses:
+ *       200:
+ *         description: List of tasks for the day
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/day/:date', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -37,9 +73,28 @@ router.get('/day/:date', async (req: Request, res: Response, next: NextFunction)
 });
 
 /**
- * GET /api/tasks/backlog
- *
- * Get backlog tasks
+ * @openapi
+ * /api/tasks/backlog:
+ *   get:
+ *     summary: Get backlog tasks
+ *     description: Retrieves all tasks in the backlog (not scheduled to a specific day)
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of backlog tasks
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/backlog', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -52,12 +107,50 @@ router.get('/backlog', async (req: Request, res: Response, next: NextFunction) =
 });
 
 /**
- * GET /api/tasks/archived
- *
- * Get archived tasks with pagination
- *
- * @query offset - Offset for pagination (default: 0)
- * @query limit - Number of tasks to return (default: 300)
+ * @openapi
+ * /api/tasks/archived:
+ *   get:
+ *     summary: Get archived tasks
+ *     description: Retrieves archived/completed tasks with pagination support
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: offset
+ *         in: query
+ *         required: false
+ *         description: Offset for pagination
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         description: Number of tasks to return
+ *         schema:
+ *           type: integer
+ *           default: 300
+ *     responses:
+ *       200:
+ *         description: List of archived tasks with pagination info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     offset:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/archived', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -73,9 +166,35 @@ router.get('/archived', async (req: Request, res: Response, next: NextFunction) 
 });
 
 /**
- * GET /api/tasks/:id
- *
- * Get a specific task by ID
+ * @openapi
+ * /api/tasks/{id}:
+ *   get:
+ *     summary: Get task by ID
+ *     description: Retrieves a specific task by its ID
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -101,18 +220,67 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 /**
- * POST /api/tasks
- *
- * Create a new task
- *
- * @body text - Task text/title (required)
- * @body notes - Task notes (optional)
- * @body timeEstimate - Time estimate in minutes (optional)
- * @body streamIds - Array of stream IDs (optional)
- * @body dueDate - Due date as ISO string (optional)
- * @body snoozeUntil - Snooze until date as ISO string (optional)
- * @body taskId - Custom task ID (optional)
- * @body private - Whether the task is private (optional)
+ * @openapi
+ * /api/tasks:
+ *   post:
+ *     summary: Create a new task
+ *     description: Creates a new task with the provided details
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: Task text/title
+ *                 example: "Review pull request"
+ *               notes:
+ *                 type: string
+ *                 description: Task notes (HTML or plain text)
+ *               timeEstimate:
+ *                 type: integer
+ *                 description: Time estimate in minutes
+ *                 example: 30
+ *               streamIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of stream IDs to assign
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Due date as ISO string
+ *               snoozeUntil:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Schedule task to this date
+ *               taskId:
+ *                 type: string
+ *                 description: Custom task ID
+ *               private:
+ *                 type: boolean
+ *                 description: Whether the task is private
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
  */
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -139,11 +307,38 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 /**
- * PATCH /api/tasks/:id/complete
- *
- * Mark a task as complete
- *
- * @body completeOn - Completion timestamp (optional, defaults to now)
+ * @openapi
+ * /api/tasks/{id}/complete:
+ *   patch:
+ *     summary: Mark task as complete
+ *     description: Marks a task as completed with optional completion timestamp
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               completeOn:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Completion timestamp (defaults to now)
+ *     responses:
+ *       200:
+ *         description: Task marked as complete
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
  */
 router.patch('/:id/complete', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -159,12 +354,45 @@ router.patch('/:id/complete', async (req: Request, res: Response, next: NextFunc
 });
 
 /**
- * PATCH /api/tasks/:id/snooze
- *
- * Update task snooze date (schedule to a day or move to backlog)
- *
- * @body newDay - Date in YYYY-MM-DD format, or null to move to backlog
- * @body timezone - Optional timezone
+ * @openapi
+ * /api/tasks/{id}/snooze:
+ *   patch:
+ *     summary: Update task schedule
+ *     description: Reschedule task to a specific day or move to backlog
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               newDay:
+ *                 type: string
+ *                 format: date
+ *                 nullable: true
+ *                 description: Date in YYYY-MM-DD format, or null to move to backlog
+ *                 example: "2024-01-15"
+ *               timezone:
+ *                 type: string
+ *                 description: Timezone for date interpretation
+ *                 example: "America/New_York"
+ *     responses:
+ *       200:
+ *         description: Task rescheduled successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
  */
 router.patch('/:id/snooze', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -182,12 +410,43 @@ router.patch('/:id/snooze', async (req: Request, res: Response, next: NextFuncti
 });
 
 /**
- * PATCH /api/tasks/:id/notes
- *
- * Update task notes
- *
- * @body html - HTML content for notes (mutually exclusive with markdown)
- * @body markdown - Markdown content for notes (mutually exclusive with html)
+ * @openapi
+ * /api/tasks/{id}/notes:
+ *   patch:
+ *     summary: Update task notes
+ *     description: Update the notes/description of a task. Provide either HTML or Markdown content.
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               html:
+ *                 type: string
+ *                 description: HTML content for notes (mutually exclusive with markdown)
+ *               markdown:
+ *                 type: string
+ *                 description: Markdown content for notes (mutually exclusive with html)
+ *     responses:
+ *       200:
+ *         description: Notes updated successfully
+ *       400:
+ *         description: Validation error - must provide html or markdown
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
  */
 router.patch('/:id/notes', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -215,11 +474,43 @@ router.patch('/:id/notes', async (req: Request, res: Response, next: NextFunctio
 });
 
 /**
- * PATCH /api/tasks/:id/planned-time
- *
- * Update task time estimate
- *
- * @body timeEstimate - Time estimate in minutes
+ * @openapi
+ * /api/tasks/{id}/planned-time:
+ *   patch:
+ *     summary: Update time estimate
+ *     description: Update the planned time estimate for a task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - timeEstimate
+ *             properties:
+ *               timeEstimate:
+ *                 type: integer
+ *                 description: Time estimate in minutes
+ *                 example: 45
+ *     responses:
+ *       200:
+ *         description: Time estimate updated
+ *       400:
+ *         description: Validation error - timeEstimate must be a number
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
  */
 router.patch('/:id/planned-time', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -247,11 +538,40 @@ router.patch('/:id/planned-time', async (req: Request, res: Response, next: Next
 });
 
 /**
- * PATCH /api/tasks/:id/due-date
- *
- * Update task due date
- *
- * @body dueDate - Due date as ISO string, or null to clear
+ * @openapi
+ * /api/tasks/{id}/due-date:
+ *   patch:
+ *     summary: Update due date
+ *     description: Update or clear the due date for a task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *                 nullable: true
+ *                 description: Due date as ISO string, or null to clear
+ *     responses:
+ *       200:
+ *         description: Due date updated
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
  */
 router.patch('/:id/due-date', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -267,12 +587,46 @@ router.patch('/:id/due-date', async (req: Request, res: Response, next: NextFunc
 });
 
 /**
- * PATCH /api/tasks/:id/text
- *
- * Update task text/title
- *
- * @body text - New task text
- * @body recommendedStreamId - Optional recommended stream ID
+ * @openapi
+ * /api/tasks/{id}/text:
+ *   patch:
+ *     summary: Update task title
+ *     description: Update the text/title of a task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: New task text/title
+ *                 example: "Updated task title"
+ *               recommendedStreamId:
+ *                 type: string
+ *                 description: Optional recommended stream ID
+ *     responses:
+ *       200:
+ *         description: Task title updated
+ *       400:
+ *         description: Validation error - text is required
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
  */
 router.patch('/:id/text', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -302,11 +656,42 @@ router.patch('/:id/text', async (req: Request, res: Response, next: NextFunction
 });
 
 /**
- * PATCH /api/tasks/:id/stream
- *
- * Update task stream assignment
- *
- * @body streamId - Stream ID to assign the task to
+ * @openapi
+ * /api/tasks/{id}/stream:
+ *   patch:
+ *     summary: Update stream assignment
+ *     description: Assign a task to a different stream/project
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - streamId
+ *             properties:
+ *               streamId:
+ *                 type: string
+ *                 description: Stream ID to assign the task to
+ *     responses:
+ *       200:
+ *         description: Stream assignment updated
+ *       400:
+ *         description: Validation error - streamId is required
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
  */
 router.patch('/:id/stream', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -334,9 +719,28 @@ router.patch('/:id/stream', async (req: Request, res: Response, next: NextFuncti
 });
 
 /**
- * DELETE /api/tasks/:id
- *
- * Delete a task
+ * @openapi
+ * /api/tasks/{id}:
+ *   delete:
+ *     summary: Delete a task
+ *     description: Permanently deletes a task
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
  */
 router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {

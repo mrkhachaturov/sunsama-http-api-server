@@ -7,10 +7,12 @@
 import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
 import { loadConfig, logConfig, validateConfig, type ServerConfig } from './config/index.js';
 import { createAuthMiddleware } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import apiRouter from './routes/index.js';
+import swaggerSpec from './swagger/index.js';
 
 /**
  * Create and configure the Express application
@@ -35,6 +37,23 @@ export function createApp(config: ServerConfig): Express {
       version: process.env['npm_package_version'] || 'unknown',
     });
   });
+
+  // Swagger UI (conditionally enabled, no auth required)
+  if (config.enableSwagger) {
+    app.use(
+      '/api-docs',
+      swaggerUi.serve,
+      swaggerUi.setup(swaggerSpec, {
+        customSiteTitle: 'Sunsama API Documentation',
+        customCss: '.swagger-ui .topbar { display: none }',
+      })
+    );
+
+    // Serve raw OpenAPI spec as JSON
+    app.get('/api-docs.json', (_req: Request, res: Response) => {
+      res.json(swaggerSpec);
+    });
+  }
 
   // API routes (auth required)
   app.use('/api', createAuthMiddleware(config), apiRouter);
