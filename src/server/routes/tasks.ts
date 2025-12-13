@@ -12,8 +12,23 @@ import {
   type Router as RouterType,
 } from 'express';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
+import { markApiChange, isRedisConnected } from '../redis/client.js';
+import { SunsamaClient } from '../../client/index.js';
 
 const router: RouterType = Router();
+
+/**
+ * Helper to mark an API-originated change for webhook filtering
+ */
+async function markChange(apiKey: string, taskId: string, eventType: string): Promise<void> {
+  if (isRedisConnected()) {
+    try {
+      await markApiChange(apiKey, taskId, eventType);
+    } catch {
+      // Ignore errors - webhook filtering is best-effort
+    }
+  }
+}
 
 /**
  * @openapi
@@ -299,7 +314,13 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       return;
     }
 
-    const result = await authReq.sunsamaClient.createTask(text, options);
+    // Generate task ID so we can mark it as API-originated BEFORE creating
+    const taskId = options.taskId || SunsamaClient.generateTaskId();
+
+    // Mark as API-originated for webhook filtering (before create, so watcher sees it)
+    await markChange(authReq.apiKey, taskId, 'created');
+
+    const result = await authReq.sunsamaClient.createTask(text, { ...options, taskId });
     res.status(201).json({ data: result });
   } catch (error) {
     next(error);
@@ -345,6 +366,9 @@ router.patch('/:id/complete', async (req: Request, res: Response, next: NextFunc
     const authReq = req as AuthenticatedRequest;
     const { id } = req.params;
     const { completeOn } = req.body;
+
+    // Mark as API-originated BEFORE the call for webhook filtering
+    await markChange(authReq.apiKey, id!, 'completed');
 
     const result = await authReq.sunsamaClient.updateTaskComplete(id!, completeOn);
     res.json({ data: result });
@@ -399,6 +423,9 @@ router.patch('/:id/snooze', async (req: Request, res: Response, next: NextFuncti
     const authReq = req as AuthenticatedRequest;
     const { id } = req.params;
     const { newDay, timezone } = req.body;
+
+    // Mark as API-originated BEFORE the call for webhook filtering
+    await markChange(authReq.apiKey, id!, 'scheduled');
 
     const result = await authReq.sunsamaClient.updateTaskSnoozeDate(id!, newDay, {
       timezone,
@@ -465,6 +492,9 @@ router.patch('/:id/notes', async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    // Mark as API-originated BEFORE the call for webhook filtering
+    await markChange(authReq.apiKey, id!, 'updated');
+
     const content = html ? { html } : { markdown };
     const result = await authReq.sunsamaClient.updateTaskNotes(id!, content);
     res.json({ data: result });
@@ -530,6 +560,9 @@ router.patch('/:id/planned-time', async (req: Request, res: Response, next: Next
       return;
     }
 
+    // Mark as API-originated BEFORE the call for webhook filtering
+    await markChange(authReq.apiKey, id!, 'updated');
+
     const result = await authReq.sunsamaClient.updateTaskPlannedTime(id!, timeEstimate);
     res.json({ data: result });
   } catch (error) {
@@ -578,6 +611,9 @@ router.patch('/:id/due-date', async (req: Request, res: Response, next: NextFunc
     const authReq = req as AuthenticatedRequest;
     const { id } = req.params;
     const { dueDate } = req.body;
+
+    // Mark as API-originated BEFORE the call for webhook filtering
+    await markChange(authReq.apiKey, id!, 'updated');
 
     const result = await authReq.sunsamaClient.updateTaskDueDate(id!, dueDate);
     res.json({ data: result });
@@ -646,6 +682,9 @@ router.patch('/:id/text', async (req: Request, res: Response, next: NextFunction
       return;
     }
 
+    // Mark as API-originated BEFORE the call for webhook filtering
+    await markChange(authReq.apiKey, id!, 'updated');
+
     const result = await authReq.sunsamaClient.updateTaskText(id!, text, {
       recommendedStreamId,
     });
@@ -711,6 +750,9 @@ router.patch('/:id/stream', async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
+    // Mark as API-originated BEFORE the call for webhook filtering
+    await markChange(authReq.apiKey, id!, 'updated');
+
     const result = await authReq.sunsamaClient.updateTaskStream(id!, streamId);
     res.json({ data: result });
   } catch (error) {
@@ -746,6 +788,10 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
   try {
     const authReq = req as AuthenticatedRequest;
     const { id } = req.params;
+
+    // Mark as API-originated BEFORE deletion for webhook filtering
+    await markChange(authReq.apiKey, id!, 'deleted');
+
     const result = await authReq.sunsamaClient.deleteTask(id!);
     res.json({ data: result });
   } catch (error) {

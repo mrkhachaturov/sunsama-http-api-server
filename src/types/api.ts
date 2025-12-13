@@ -681,12 +681,20 @@ export interface TaskRunDate {
 }
 
 /**
- * Task time horizon
+ * Task time horizon (response type with __typename)
  */
 export interface TaskTimeHorizon {
   type: string;
   relativeTo: string;
   __typename: 'TaskTimeHorizon';
+}
+
+/**
+ * Task time horizon input (for mutations, without __typename)
+ */
+export interface TaskTimeHorizonInput {
+  type: string;
+  relativeTo: string;
 }
 
 /**
@@ -1138,7 +1146,7 @@ export interface TaskInput {
   snooze: TaskSnoozeInput | null;
 
   /** Time horizon configuration (optional) */
-  timeHorizon: TaskTimeHorizon | null;
+  timeHorizon: TaskTimeHorizonInput | null;
 
   /** Due date (optional) */
   dueDate: string | null;
@@ -1192,6 +1200,17 @@ export interface TaskInput {
 /**
  * Simplified options for creating a task
  */
+/**
+ * Time horizon type for backlog tasks
+ * - week: Someday in the next week
+ * - month: Someday in the next month
+ * - quarter: Someday in the next quarter
+ * - year: Someday in the next year
+ * - someday: Someday (default)
+ * - never: Never
+ */
+export type TimeHorizonType = 'week' | 'month' | 'quarter' | 'year' | 'someday' | 'never';
+
 export interface CreateTaskOptions {
   /** Custom task ID (if not provided, one will be generated automatically) */
   taskId?: string;
@@ -1213,6 +1232,9 @@ export interface CreateTaskOptions {
 
   /** Snooze until date as Date or ISO string */
   snoozeUntil?: Date | string;
+
+  /** Backlog bucket (week, month, quarter, year, someday, never). Default: someday */
+  timeHorizon?: TimeHorizonType;
 
   /** Integration information for linking task to external services (e.g., Gmail) */
   integration?: TaskIntegration;

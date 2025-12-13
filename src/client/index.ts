@@ -810,7 +810,12 @@ export class SunsamaClient {
       duration: null,
       runDate: null,
       snooze,
-      timeHorizon: null,
+      timeHorizon: options?.timeHorizon
+        ? {
+            type: options.timeHorizon,
+            relativeTo: new Date().toISOString(),
+          }
+        : null,
       dueDate,
       comments: [],
       orderings: [],

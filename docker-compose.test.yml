@@ -1,0 +1,57 @@
+services:
+  # Build and run the API server locally
+  sunsama-api:
+    build: .
+    container_name: sunsama-api-test
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Moscow
+      - PORT=3000
+      - HOST=0.0.0.0
+      - ENABLE_SWAGGER=true
+      - LOG_LEVEL=debug
+      
+      # Webhook config - sends to our test receiver
+      - WEBHOOK_ENABLED=true
+      - WEBHOOK_URL=http://webhook-receiver:9090/webhook
+      - WEBHOOK_SECRET=test-secret-123
+      - REDIS_URL=redis://redis:6379
+      
+      # Polling intervals (4 scopes)
+      - WEBHOOK_POLL_INTERVAL=15           # Today + backlog (every 15s for testing)
+      - WEBHOOK_POLL_INTERVAL_WEEK=60      # This week (every 1 min for testing)
+      - WEBHOOK_POLL_INTERVAL_PAST=120     # Past weeks (every 2 min for testing)
+      - WEBHOOK_POLL_INTERVAL_FUTURE=90    # Future weeks (every 1.5 min for testing)
+      
+      # Calendar scope
+      - WEBHOOK_POLL_WEEKS_PAST=1
+      - WEBHOOK_POLL_WEEKS_AHEAD=1
+      
+      # Credentials from .env (format: API_KEY_sk_test=email:password)
+      - API_KEY_sk_test=${SUNSAMA_EMAIL}:${SUNSAMA_PASSWORD}
+    depends_on:
+      - redis
+      - webhook-receiver
+    restart: unless-stopped
+
+  # Redis for webhook state
+  redis:
+    image: redis:7-alpine
+    container_name: sunsama-redis-test
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # Simple webhook receiver
+  webhook-receiver:
+    image: node:20-alpine
+    container_name: webhook-receiver
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./scripts/webhook-receiver.js:/app/receiver.js:ro
+    command: node /app/receiver.js
+    restart: unless-stopped
