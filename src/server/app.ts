@@ -20,8 +20,20 @@ import swaggerSpec from './swagger/index.js';
 export function createApp(config: ServerConfig): Express {
   const app = express();
 
-  // Security middleware
-  app.use(helmet());
+  // Security middleware - relax for Swagger UI (dev only), strict for production
+  if (config.enableSwagger) {
+    app.use(
+      helmet({
+        contentSecurityPolicy: false, // Disable CSP entirely for Swagger UI
+        hsts: false, // Disable HSTS - we're on HTTP for local dev
+        crossOriginOpenerPolicy: false,
+        crossOriginResourcePolicy: false,
+        originAgentCluster: false,
+      })
+    );
+  } else {
+    app.use(helmet());
+  }
 
   // CORS - allow all origins for API access
   app.use(cors());
