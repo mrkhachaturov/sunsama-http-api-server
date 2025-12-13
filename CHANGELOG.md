@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reverse Proxy Support** - Added `trust proxy` for nginx, Traefik, etc.
 - **Logging System** - Configurable log levels (debug, info, warn, error) via `LOG_LEVEL` env var
 - **Backlog Bucket Support** - Create tasks in specific backlog buckets via `timeHorizon` option
-  - Supported values: `week`, `month`, `quarter`, `year`, `someday`, `never`
+  - Supported values: `soon`, `next`, `next-quarter`, `later`, `someday`, `never`
 
 ### Configuration
 

@@ -24,6 +24,14 @@
     "no-console": "warn",
     "no-debugger": "error"
   },
+  "overrides": [
+    {
+      "files": ["src/server/**/*.ts", "src/__tests__/**/*.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ],
   "env": {
     "node": true,
     "es2022": true

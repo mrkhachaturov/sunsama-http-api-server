@@ -282,6 +282,11 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
  *               private:
  *                 type: boolean
  *                 description: Whether the task is private
+ *               timeHorizon:
+ *                 type: string
+ *                 enum: [soon, next, next-quarter, later, someday, never]
+ *                 description: Backlog bucket for the task. Default is someday
+ *                 example: next-quarter
  *     responses:
  *       201:
  *         description: Task created successfully

@@ -819,7 +819,15 @@ export class SunsamaClient {
       dueDate,
       comments: [],
       orderings: [],
-      backlogOrderings: [],
+      backlogOrderings: options?.timeHorizon
+        ? [
+            {
+              horizonType: options.timeHorizon,
+              position: 0,
+              streamId: options?.streamIds?.[0] || null,
+            },
+          ]
+        : [],
       subtasks: [],
       subtasksCollapsed: null,
       sequence: null,
