@@ -2,7 +2,8 @@ version: "3.9"
 
 services:
   sunsama-api:
-    build: .
+    image: ghcr.io/astrateam-net/sunsama-api:1.0.0
+    # build: .  # Uncomment to build locally instead
     container_name: sunsama-api
     ports:
       - "3000:3000"
