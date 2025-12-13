@@ -91,7 +91,7 @@
     "release": "changeset publish",
     "docs:dev": "typedoc --watch",
     "docs:build": "typedoc",
-    "prepare": "husky"
+    "prepare": "node -e \"if (require('fs').existsSync('.git')) require('child_process').execSync('husky', {stdio: 'inherit'})\""
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.7",
