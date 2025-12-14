@@ -91,7 +91,8 @@ POST /api/tasks            # Create a new task
   Body: { text, notes?, timeEstimate?, streamIds?, timeHorizon?, dueDate?, snoozeUntil?, private?, taskId? }
 
 PATCH /api/tasks/:id/complete      # Mark task complete
-PATCH /api/tasks/:id/snooze        # Schedule task / move to backlog
+PATCH /api/tasks/:id/snooze        # Schedule task to a specific day
+POST  /api/tasks/:id/backlog       # Move task to backlog
 PATCH /api/tasks/:id/notes         # Update task notes
 PATCH /api/tasks/:id/planned-time  # Update time estimate
 PATCH /api/tasks/:id/due-date      # Update due date

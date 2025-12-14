@@ -287,6 +287,34 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
  *                 enum: [soon, next, next-quarter, later, someday, never]
  *                 description: Backlog bucket for the task. Default is someday
  *                 example: next-quarter
+ *               integration:
+ *                 type: object
+ *                 description: Link task to external service (website, Jira, GitHub, etc.)
+ *                 properties:
+ *                   service:
+ *                     type: string
+ *                     enum: [website, jira, github, gmail, linear, notion, asana, trello, todoist, clickup, slack]
+ *                     description: Integration service type
+ *                     example: website
+ *                   identifier:
+ *                     type: object
+ *                     description: Service-specific identifier
+ *                     properties:
+ *                       url:
+ *                         type: string
+ *                         description: URL to the external resource
+ *                         example: "https://jira.example.com/browse/PROJ-123"
+ *                       title:
+ *                         type: string
+ *                         description: Title of the external resource
+ *                         example: "PROJ-123 - Fix login bug"
+ *                       description:
+ *                         type: string
+ *                         description: Description of the external resource
+ *                       siteName:
+ *                         type: string
+ *                         description: Name of the external service
+ *                         example: "Jira"
  *     responses:
  *       201:
  *         description: Task created successfully
@@ -435,6 +463,46 @@ router.patch('/:id/snooze', async (req: Request, res: Response, next: NextFuncti
     const result = await authReq.sunsamaClient.updateTaskSnoozeDate(id!, newDay, {
       timezone,
     });
+    res.json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @openapi
+ * /api/tasks/{id}/backlog:
+ *   post:
+ *     summary: Move task to backlog
+ *     description: Removes task from daily schedule and moves it to backlog. Note - timeHorizon bucket can only be set when creating a task, not when moving to backlog.
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Task ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task moved to backlog
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Task not found
+ */
+router.post('/:id/backlog', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const { id } = req.params;
+
+    // Mark as API-originated BEFORE the call for webhook filtering
+    await markChange(authReq.apiKey, id!, 'scheduled');
+
+    // Move to backlog by setting snooze date to null
+    const result = await authReq.sunsamaClient.updateTaskSnoozeDate(id!, null);
     res.json({ data: result });
   } catch (error) {
     next(error);

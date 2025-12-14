@@ -32,6 +32,25 @@ const server = http.createServer((req, res) => {
       console.log('API Key:', payload.apiKey);
       console.log('Task ID:', payload.data.task?._id || 'N/A (deleted)');
       console.log('Task Text:', payload.data.task?.text || 'N/A');
+      
+      // Show integration info if present
+      const integration = payload.data.task?.integration;
+      if (integration) {
+        console.log('Integration:', integration.service);
+        if (integration.identifier?.url) {
+          console.log('Integration URL:', integration.identifier.url);
+        }
+        if (integration.identifier?.description) {
+          console.log('Integration Description:', integration.identifier.description);
+        }
+      }
+      
+      // Show notes if present
+      if (payload.data.task?.notes) {
+        const notesPreview = payload.data.task.notes.replace(/<[^>]*>/g, '').slice(0, 100);
+        console.log('Notes:', notesPreview + (payload.data.task.notes.length > 100 ? '...' : ''));
+      }
+      
       if (payload.data.changes) {
         console.log('Changes:', JSON.stringify(payload.data.changes, null, 2));
       }

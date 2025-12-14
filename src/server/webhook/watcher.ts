@@ -358,6 +358,8 @@ async function pollForUser(
     }
 
     // Detect changes only for tasks in current scope
+    const lastPollTime = storedState?.lastPoll ? new Date(storedState.lastPoll).getTime() : 0;
+
     for (const [taskId, currentTask] of currentTasksMap) {
       const oldTaskState = oldTasksMap[taskId] || null;
       const newTaskState = taskToStoredState(currentTask);
@@ -365,9 +367,21 @@ async function pollForUser(
       // Update state with current task data
       newState.tasks[taskId] = newTaskState;
 
-      // Skip if task didn't exist before (new task we haven't seen)
-      // This prevents "created" spam for tasks that existed before our baseline
+      // Handle new tasks (not in baseline)
       if (!oldTaskState) {
+        // Check if task was created AFTER our last poll - emit task.created
+        const taskCreatedAt = currentTask.createdAt ? new Date(currentTask.createdAt).getTime() : 0;
+
+        if (taskCreatedAt > lastPollTime) {
+          // Check if this was an API-originated change
+          const apiOriginated = await checkApiChange(apiKey, taskId);
+          if (!apiOriginated) {
+            const payload = createWebhookPayload('task.created', apiKey, {
+              task: currentTask,
+            });
+            await dispatchWebhook(config, payload);
+          }
+        }
         continue;
       }
 
