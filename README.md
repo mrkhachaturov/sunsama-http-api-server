@@ -88,10 +88,11 @@ GET /api/tasks/archived    # Get archived tasks (?offset=0&limit=300)
 GET /api/tasks/:id         # Get task by ID
 
 POST /api/tasks            # Create a new task
-  Body: { text, notes?, timeEstimate?, streamIds? }
+  Body: { text, notes?, timeEstimate?, streamIds?, timeHorizon?, dueDate?, snoozeUntil?, private?, taskId? }
 
 PATCH /api/tasks/:id/complete      # Mark task complete
-PATCH /api/tasks/:id/snooze        # Schedule task / move to backlog
+PATCH /api/tasks/:id/snooze        # Schedule task to a specific day
+POST  /api/tasks/:id/backlog       # Move task to backlog
 PATCH /api/tasks/:id/notes         # Update task notes
 PATCH /api/tasks/:id/planned-time  # Update time estimate
 PATCH /api/tasks/:id/due-date      # Update due date
@@ -134,6 +135,33 @@ Body:
     "timeEstimate": 30
   }
 ```
+
+### Example: Create Task in Backlog Bucket
+
+You can create tasks in specific backlog buckets using the `timeHorizon` parameter:
+
+```
+Method: POST
+URL: http://localhost:3000/api/tasks
+Headers:
+  Authorization: Bearer sk_user1
+  Content-Type: application/json
+Body:
+  {
+    "text": "Task in next quarter",
+    "timeHorizon": "next-quarter"
+  }
+```
+
+**Available `timeHorizon` values:**
+- `soon` - Someday in the next week or two
+- `next` - Someday in the next month
+- `next-quarter` - Someday in the next quarter
+- `later` - Someday in the next year
+- `someday` - Someday (default if not specified)
+- `never` - Never
+
+Tasks without `timeHorizon` will be placed in the "Someday" bucket by default.
 
 ## Configuration
 

@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   sunsama-api:
-    image: ghcr.io/mrkhachaturov/sunsama-http-api-server:1.0.0
+    image: ghcr.io/mrkhachaturov/sunsama-http-api-server:1.2.0
     # build: .  # Uncomment to build locally instead
     container_name: sunsama-api
     ports:
@@ -12,6 +12,31 @@ services:
       - HOST=0.0.0.0
       # Enable Swagger UI at /api-docs (set to false in production)
       - ENABLE_SWAGGER=true
+
+      # Timezone (important for calendar week calculations)
+      # - TZ=Europe/Moscow
+
+      # === WEBHOOK CONFIGURATION (optional) ===
+      # - WEBHOOK_ENABLED=true
+      # - WEBHOOK_URL=https://n8n.example.com/webhook/sunsama
+      # - WEBHOOK_SECRET=your-hmac-signing-secret
+      # - REDIS_URL=redis://redis:6379
+      
+      # Polling intervals (4 scopes)
+      # - WEBHOOK_POLL_INTERVAL=30          # Today + backlog (seconds)
+      # - WEBHOOK_POLL_INTERVAL_WEEK=300    # This week Mon-Sun (seconds)
+      # - WEBHOOK_POLL_INTERVAL_PAST=900    # Past weeks (seconds)
+      # - WEBHOOK_POLL_INTERVAL_FUTURE=600  # Future weeks (seconds)
+      
+      # Calendar scope (Mon-Sun weeks)
+      # - WEBHOOK_POLL_WEEKS_PAST=1         # Past weeks to monitor
+      # - WEBHOOK_POLL_EXTRA_DAYS_PAST=0    # Extra days before past weeks
+      # - WEBHOOK_POLL_WEEKS_AHEAD=1        # Future weeks to monitor
+      # - WEBHOOK_POLL_EXTRA_DAYS_AHEAD=0   # Extra days after future weeks
+      
+      # Event filter (comma-separated, empty = all events)
+      # - WEBHOOK_EVENTS=task.created,task.completed,task.scheduled,task.updated
+
       # Option 1: Direct credentials (for development only)
       # - API_KEY_sk_dev=your-email@example.com:your-password
       
@@ -21,6 +46,8 @@ services:
     secrets:
       - user1_creds
       - user2_creds
+    # depends_on:
+    #   - redis  # Uncomment when webhooks enabled
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
@@ -29,11 +56,28 @@ services:
       retries: 3
       start_period: 10s
 
+  # Redis - required when WEBHOOK_ENABLED=true
+  # Uncomment this section to enable webhooks
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: sunsama-redis
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+
 secrets:
   user1_creds:
     file: ./secrets/user1.txt
   user2_creds:
     file: ./secrets/user2.txt
+
+# volumes:
+#   redis_data:  # Uncomment when webhooks enabled
 
 # Usage:
 # 1. Create secrets directory: mkdir -p secrets
@@ -42,4 +86,23 @@ secrets:
 #    echo "user2@example.com:password2" > secrets/user2.txt
 # 3. Build and run: docker-compose up -d
 # 4. Test: curl -H "Authorization: Bearer sk_user1" http://localhost:3000/api/user
+#
+# For webhooks:
+# 1. Uncomment the redis service and volumes sections
+# 2. Uncomment depends_on in sunsama-api
+# 3. Configure webhook environment variables:
+#    - WEBHOOK_ENABLED=true
+#    - WEBHOOK_URL=https://your-webhook-receiver.com/webhook
+#    - WEBHOOK_SECRET=your-hmac-signing-secret
+#    - REDIS_URL=redis://redis:6379
+#
+# Webhook events are triggered when tasks are changed in the Sunsama app
+# (not when changed via this API). Events: task.created, task.updated,
+# task.completed, task.uncompleted, task.scheduled, task.deleted
+#
+# Polling scopes:
+# - Today + backlog: Real-time (default 30s)
+# - This week (Mon-Sun): Weekly planning (default 5min)
+# - Past weeks: Overdue tasks (default 15min)
+# - Future weeks: Upcoming planning (default 10min)
 

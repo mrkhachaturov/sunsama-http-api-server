@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-12-13
+
+### Added
+
+- **Webhook System** - Real-time notifications when tasks change in Sunsama app
+  - Polling-based change detection with 4-tier intervals (today, week, past, future)
+  - Calendar-based week scope (Monday to Sunday)
+  - Events: `task.created`, `task.completed`, `task.uncompleted`, `task.deleted`, `task.updated`, `task.scheduled`
+  - HMAC signature (`X-Webhook-Signature`) for webhook verification
+  - Smart filtering: only fires for changes made in Sunsama app, not via this API
+  - Baseline storage on first poll (no initial event spam)
+  - Tracks backlog bucket changes (timeHorizon)
+- **Redis Integration** - Required when webhooks enabled for state persistence
+- **Reverse Proxy Support** - Added `trust proxy` for nginx, Traefik, etc.
+- **Logging System** - Configurable log levels (debug, info, warn, error) via `LOG_LEVEL` env var
+- **Backlog Bucket Support** - Create tasks in specific backlog buckets via `timeHorizon` option
+  - Supported values: `soon`, `next`, `next-quarter`, `later`, `someday`, `never`
+- **Integration Support** - Link tasks to external services when creating via API
+  - Supported services: `website`, `jira`, `github`, `gmail`, `linear`, `notion`, `asana`, `trello`, `todoist`, `clickup`, `slack`
+  - Includes URL, title, description, and site name
+- **Move to Backlog Endpoint** - `POST /api/tasks/:id/backlog` to move task from day to backlog
+- **Webhook task.created Events** - Now emits `task.created` for tasks added via Sunsama UI or integrations (Jira, GitHub, etc.)
+
+### Configuration
+
+New environment variables:
+- `WEBHOOK_ENABLED` - Enable webhook system (default: false)
+- `WEBHOOK_URL` - Target URL for webhook POSTs
+- `WEBHOOK_SECRET` - HMAC signing secret
+- `WEBHOOK_POLL_INTERVAL` - Today + backlog polling interval in seconds (default: 30)
+- `WEBHOOK_POLL_INTERVAL_WEEK` - This week polling interval (default: 300 = 5 min)
+- `WEBHOOK_POLL_INTERVAL_PAST` - Past weeks polling interval (default: 900 = 15 min)
+- `WEBHOOK_POLL_INTERVAL_FUTURE` - Future weeks polling interval (default: 600 = 10 min)
+- `WEBHOOK_POLL_WEEKS_PAST` - Number of past weeks to monitor (default: 1)
+- `WEBHOOK_POLL_WEEKS_AHEAD` - Number of future weeks to monitor (default: 1)
+- `WEBHOOK_POLL_EXTRA_DAYS_PAST` - Extra days before past weeks (default: 0)
+- `WEBHOOK_POLL_EXTRA_DAYS_AHEAD` - Extra days after future weeks (default: 0)
+- `WEBHOOK_EVENTS` - Comma-separated event filter (optional, default: all events)
+- `REDIS_URL` - Redis connection URL (required when webhooks enabled)
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` - Alternative Redis config
+- `LOG_LEVEL` - Log level: debug, info, warn, error (default: info)
+- `TZ` - Timezone for calendar week calculations (e.g., `Europe/Moscow`)
+
 ## [1.1.0] - 2025-12-13
 
 ### Added
@@ -59,5 +102,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Built on top of [sunsama-api](https://github.com/robertn702/sunsama-api) by [@robertn702](https://github.com/robertn702).
 
+[1.2.0]: https://github.com/mrkhachaturov/sunsama-http-api-server/releases/tag/v1.2.0
 [1.1.0]: https://github.com/mrkhachaturov/sunsama-http-api-server/releases/tag/v1.1.0
 [1.0.0]: https://github.com/mrkhachaturov/sunsama-http-api-server/releases/tag/v1.0.0

@@ -626,12 +626,21 @@ export interface TaskOrdering {
 }
 
 /**
- * Task backlog ordering
+ * Task backlog ordering input (for mutations, without __typename)
+ */
+export interface TaskBacklogOrderingInput {
+  horizonType: string;
+  position: number;
+  streamId: string | null;
+}
+
+/**
+ * Task backlog ordering (response type with __typename)
  */
 export interface TaskBacklogOrdering {
   horizonType: string;
   position: number;
-  streamId: string;
+  streamId: string | null;
   __typename: 'TaskBacklogOrdering';
 }
 
@@ -681,12 +690,20 @@ export interface TaskRunDate {
 }
 
 /**
- * Task time horizon
+ * Task time horizon (response type with __typename)
  */
 export interface TaskTimeHorizon {
   type: string;
   relativeTo: string;
   __typename: 'TaskTimeHorizon';
+}
+
+/**
+ * Task time horizon input (for mutations, without __typename)
+ */
+export interface TaskTimeHorizonInput {
+  type: string;
+  relativeTo: string;
 }
 
 /**
@@ -1138,7 +1155,7 @@ export interface TaskInput {
   snooze: TaskSnoozeInput | null;
 
   /** Time horizon configuration (optional) */
-  timeHorizon: TaskTimeHorizon | null;
+  timeHorizon: TaskTimeHorizonInput | null;
 
   /** Due date (optional) */
   dueDate: string | null;
@@ -1150,7 +1167,7 @@ export interface TaskInput {
   orderings: TaskOrdering[];
 
   /** Backlog orderings */
-  backlogOrderings: TaskBacklogOrdering[];
+  backlogOrderings: TaskBacklogOrderingInput[];
 
   /** Subtasks */
   subtasks: TaskSubtask[];
@@ -1192,6 +1209,17 @@ export interface TaskInput {
 /**
  * Simplified options for creating a task
  */
+/**
+ * Time horizon type for backlog tasks (Sunsama's internal values)
+ * - soon: Someday in the next week or two
+ * - next: Someday in the next month
+ * - next-quarter: Someday in the next quarter
+ * - later: Someday in the next year
+ * - someday: Someday (default)
+ * - never: Never
+ */
+export type TimeHorizonType = 'soon' | 'next' | 'next-quarter' | 'later' | 'someday' | 'never';
+
 export interface CreateTaskOptions {
   /** Custom task ID (if not provided, one will be generated automatically) */
   taskId?: string;
@@ -1213,6 +1241,9 @@ export interface CreateTaskOptions {
 
   /** Snooze until date as Date or ISO string */
   snoozeUntil?: Date | string;
+
+  /** Backlog bucket (soon, next, next-quarter, later, someday, never). Default: someday */
+  timeHorizon?: TimeHorizonType;
 
   /** Integration information for linking task to external services (e.g., Gmail) */
   integration?: TaskIntegration;

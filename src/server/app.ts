@@ -20,6 +20,10 @@ import swaggerSpec from './swagger/index.js';
 export function createApp(config: ServerConfig): Express {
   const app = express();
 
+  // Trust reverse proxy headers (X-Forwarded-For, X-Forwarded-Proto, etc.)
+  // Required for correct client IP detection and HTTPS awareness behind nginx/traefik/etc.
+  app.set('trust proxy', true);
+
   // Security middleware - relax for Swagger UI (dev only), strict for production
   if (config.enableSwagger) {
     app.use(
