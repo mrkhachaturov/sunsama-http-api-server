@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Logging System** - Configurable log levels (debug, info, warn, error) via `LOG_LEVEL` env var
 - **Backlog Bucket Support** - Create tasks in specific backlog buckets via `timeHorizon` option
   - Supported values: `soon`, `next`, `next-quarter`, `later`, `someday`, `never`
+- **Integration Support** - Link tasks to external services when creating via API
+  - Supported services: `website`, `jira`, `github`, `gmail`, `linear`, `notion`, `asana`, `trello`, `todoist`, `clickup`, `slack`
+  - Includes URL, title, description, and site name
+- **Move to Backlog Endpoint** - `POST /api/tasks/:id/backlog` to move task from day to backlog
+- **Webhook task.created Events** - Now emits `task.created` for tasks added via Sunsama UI or integrations (Jira, GitHub, etc.)
 
 ### Configuration
 
